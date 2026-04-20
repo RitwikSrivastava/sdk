@@ -1,6 +1,8 @@
 {
   "mappings": [
-    "/content/sdk/:/"
+    "/content/sdk/:/",
+    "/content/sdk/configuration:/.helix/config.json",
+    "/content/sdk/metadata:/metadata.json"
   ],
   "includes": [
     "/content/sdk/"
