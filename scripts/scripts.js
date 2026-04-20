@@ -11,9 +11,10 @@ import {
   loadSections,
   loadCSS,
 } from './aem.js';
+import { loadDmSdk } from './utils/dm-sdk-loader.js';
 
 /**
- * Moves all the attributes from a given elmenet to another given element.
+ * Moves all the attributes from a given element to another given element.
  * @param {Element} from the element to copy attributes from
  * @param {Element} to the element to copy attributes to
  */
@@ -46,6 +47,175 @@ export function moveInstrumentation(from, to) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Dynamic Media URL helpers
+// ---------------------------------------------------------------------------
+
+function isDMOpenAPIUrl(src) {
+  // No `g` flag — regex literals with `g` are stateful and advance lastIndex.
+  return /^https?:\/\/.*\/adobe\/assets\/urn:aaid:aem:/i.test(src);
+}
+
+function isScene7Url(src) {
+  return /^(https?:\/\/(.*\.)?scene7\.com\/is\/image\/(.*))/i.test(src);
+}
+
+/**
+ * Returns true for any Dynamic Media delivery URL (Scene7 or OpenAPI).
+ * @param {string} src
+ * @returns {boolean}
+ */
+export function isDmUrl(src) {
+  return isScene7Url(src) || isDMOpenAPIUrl(src);
+}
+
+/**
+ * Parses a DM URL into { origin, asset, sourceUrl }.
+ * Returns null for non-DM or malformed URLs.
+ * @param {string} src
+ * @returns {{ origin: string, asset: string, sourceUrl: string } | null}
+ */
+function parseDmSource(src) {
+  try {
+    const u = new URL(src, window.location.href);
+    const scene7Match = u.pathname.match(/\/is\/image\/(.+)/i);
+    if (scene7Match) {
+      return { origin: u.origin, asset: scene7Match[1], sourceUrl: u.href };
+    }
+    if (isDMOpenAPIUrl(src)) {
+      return { origin: u.origin, asset: u.pathname.replace(/^\/+/, ''), sourceUrl: u.href };
+    }
+  } catch {
+    // ignore malformed URLs
+  }
+  return null;
+}
+
+/**
+ * Inject a <link rel="preconnect"> to the given origin if one doesn't exist.
+ * @param {string} origin
+ */
+function preconnectOrigin(origin) {
+  if (!origin || document.querySelector(`link[rel="preconnect"][href="${origin}"]`)) return;
+  const link = document.createElement('link');
+  link.rel = 'preconnect';
+  link.href = origin;
+  link.crossOrigin = '';
+  document.head.appendChild(link);
+}
+
+/**
+ * Build a DM SDK-managed <img> from a parsed DM source.
+ * Does NOT set img.src — the SDK sets it via scanDom().
+ * The first DM image is marked as priority (likely the LCP hero).
+ * @param {{ origin: string, asset: string, sourceUrl: string }} parsed
+ * @param {string} altText
+ * @param {boolean} isPriority
+ * @returns {HTMLImageElement}
+ */
+function buildDmImg(parsed, altText, isPriority) {
+  const img = document.createElement('img');
+  img.dataset.dmSrc = parsed.asset;
+  img.dataset.dmOrigin = parsed.origin;
+  img.dataset.dmSourceUrl = parsed.sourceUrl;
+  if (isPriority) {
+    img.setAttribute('data-dm-priority', '');
+    img.setAttribute('data-dm-role', 'hero');
+    img.setAttribute('fetchpriority', 'high');
+  } else {
+    img.setAttribute('loading', 'lazy');
+  }
+  if (altText) img.alt = altText;
+  return img;
+}
+
+/**
+ * Converts Scene7 and DM OpenAPI image sources to SDK-managed img elements.
+ * Handles <a href="…dm-url…"> links and <picture> elements.
+ * Does NOT set img.src — the dm-sdk sets it via scanDom() / activateDmSdk().
+ * @param {Element} main
+ */
+export function decorateExternalImages(main) {
+  let firstDmImage = true;
+
+  // 1. Anchor links pointing to a DM asset
+  main.querySelectorAll('a[href]').forEach((a) => {
+    if (!isScene7Url(a.href) && !isDMOpenAPIUrl(a.href)) return;
+    const parsed = parseDmSource(a.href);
+    if (!parsed) return;
+    preconnectOrigin(parsed.origin);
+    const altText = a.innerText.trim();
+    const img = buildDmImg(parsed, altText !== a.href ? altText : '', firstDmImage);
+    firstDmImage = false;
+    a.replaceWith(img);
+  });
+
+  // 2. <picture> elements whose source/img points to a DM asset
+  main.querySelectorAll('picture').forEach((picture) => {
+    let dmSrc = '';
+    for (const source of picture.querySelectorAll('source')) {
+      const candidate = (source.srcset || '').split(',')[0].trim().split(/\s+/)[0];
+      if (candidate && (isScene7Url(candidate) || isDMOpenAPIUrl(candidate))) {
+        dmSrc = candidate;
+        break;
+      }
+    }
+    if (!dmSrc) {
+      const innerImg = picture.querySelector('img');
+      const src = innerImg?.src || '';
+      if (isScene7Url(src) || isDMOpenAPIUrl(src)) dmSrc = src;
+    }
+    if (!dmSrc) return;
+    const parsed = parseDmSource(dmSrc);
+    if (!parsed) return;
+    preconnectOrigin(parsed.origin);
+    const innerAlt = picture.querySelector('img')?.alt || '';
+    const img = buildDmImg(parsed, innerAlt, firstDmImage);
+    firstDmImage = false;
+    picture.replaceWith(img);
+  });
+}
+
+/**
+ * After eager-section blocks execute they may produce img[data-dm-src] elements
+ * that were invisible to decorateExternalImages() (which runs before block JS).
+ * This promotes the first untagged DM image to LCP priority and preconnects origins.
+ * @param {Element} root
+ */
+function promoteFirstBlockDmImage(root) {
+  const alreadyHasPriority = root.querySelector('img[data-dm-priority]');
+  root.querySelectorAll('img[data-dm-src]').forEach((img) => {
+    const { dmOrigin } = img.dataset;
+    if (dmOrigin) preconnectOrigin(dmOrigin);
+  });
+  if (alreadyHasPriority) return;
+  const first = root.querySelector('img[data-dm-src]:not([data-dm-priority]):not([data-dm-auto-priority])');
+  if (!first) return;
+  first.setAttribute('data-dm-priority', '');
+  first.setAttribute('fetchpriority', 'high');
+  first.removeAttribute('loading');
+}
+
+/**
+ * Loads the dm-sdk and activates all img[data-dm-src] in root via scanDom().
+ * Uses requestAnimationFrame so the SDK gets accurate container widths.
+ * @param {Element} root
+ */
+async function activateDmSdk(root) {
+  if (!root) return;
+  try {
+    const sdk = await loadDmSdk();
+    if (typeof sdk.scanDom === 'function') {
+      requestAnimationFrame(() => sdk.scanDom(root));
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('[DM SDK] Failed to load.', err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+
 /**
  * load fonts.css and set a session storage flag
  */
@@ -56,53 +226,6 @@ async function loadFonts() {
   } catch (e) {
     // do nothing
   }
-}
-
-/**
- * Returns true for Dynamic Media delivery URLs (Scene7 or OpenAPI).
- * @param {string} url
- * @returns {boolean}
- */
-export function isDmUrl(url) {
-  return url.includes('scene7.com') || url.includes('adobeassets.com');
-}
-
-/**
- * Replaces <a href="DM-url"> links (and standalone <picture> elements whose
- * source points to a DM URL) with <img> elements that carry both a direct
- * src (for immediate rendering) and data-dm-* attributes (so the dm-sdk can
- * later apply adaptive sizing, LQIP and smart DPR on top).
- *
- * This is the Approach-B "link rewriting" step: the UE content model stores
- * the DAM delivery URL as a string/link; this function converts it to a
- * renderable image before any block JS runs.
- * @param {Element} main
- */
-export function decorateExternalImages(main) {
-  let firstDm = true;
-
-  main.querySelectorAll('a[href]').forEach((a) => {
-    if (!isDmUrl(a.href)) return;
-    try {
-      const url = new URL(a.href);
-      const img = document.createElement('img');
-      // Set src directly so the image renders immediately (UE + published page).
-      img.src = a.href;
-      img.dataset.dmOrigin = url.origin;
-      img.dataset.dmSrc = url.pathname.replace(/^\/+/, '');
-      img.alt = a.textContent.trim() === a.href ? '' : a.textContent.trim();
-      if (firstDm) {
-        img.setAttribute('fetchpriority', 'high');
-        img.loading = 'eager';
-        firstDm = false;
-      } else {
-        img.loading = 'lazy';
-      }
-      a.replaceWith(img);
-    } catch {
-      // skip malformed URLs
-    }
-  });
 }
 
 /**
@@ -122,13 +245,11 @@ function buildAutoBlocks() {
  * Decorates the main element.
  * @param {Element} main The main element
  */
-// eslint-disable-next-line import/prefer-default-export
 export function decorateMain(main) {
-  // hopefully forward compatible button decoration
   decorateButtons(main);
   decorateIcons(main);
   buildAutoBlocks(main);
-  // Convert DM delivery URL links → <img> before blocks decorate
+  // Convert DM delivery URL links → img[data-dm-src] before blocks run
   decorateExternalImages(main);
   decorateSections(main);
   decorateBlocks(main);
@@ -145,11 +266,21 @@ async function loadEager(doc) {
   if (main) {
     decorateMain(main);
     document.body.classList.add('appear');
+
+    // Activate dm-sdk early (eager) so DM images get src before LCP fires.
+    // activateDmSdk is intentionally not awaited — it runs in parallel with
+    // loadSection so the SDK fetch doesn't delay first-section rendering.
+    const sdkReady = activateDmSdk(main);
+
     await loadSection(main.querySelector('.section'), waitForFirstImage);
+
+    // After the eager section's block JS has run, any block-injected
+    // img[data-dm-src] elements need priority promotion and a scanDom pass.
+    await sdkReady;
+    promoteFirstBlockDmImage(main);
   }
 
   try {
-    /* if desktop (proxy for fast connection) or fonts already loaded, load fonts.css */
     if (window.innerWidth >= 900 || sessionStorage.getItem('fonts-loaded')) {
       loadFonts();
     }
@@ -179,48 +310,12 @@ async function loadLazy(doc) {
 }
 
 /**
- * Finds Dynamic Media images (Scene7 / OpenAPI) in the document, tags them
- * with data-dm-* attributes, then activates the dm-sdk observer so images
- * are served at the exact container width with smart DPR, LQIP, and lazy
- * loading — all contributing to a higher Lighthouse performance score.
- */
-async function initDmSdk() {
-  const dmImages = [...document.querySelectorAll('img')].filter((img) => {
-    const src = img.src || '';
-    return src.includes('scene7.com') || src.includes('adobeassets.com');
-  });
-
-  if (!dmImages.length) return;
-
-  dmImages.forEach((img) => {
-    if (img.dataset.dmSrc) return;
-    try {
-      const url = new URL(img.src);
-      img.dataset.dmOrigin = url.origin;
-      // Scene7:  /is/image/company/asset-name  → company/asset-name
-      // OpenAPI: /adobe/assets/urn:aaid:...    → urn:aaid:...
-      img.dataset.dmSrc = url.pathname
-        .replace(/^\/is\/image\//, '')
-        .replace(/^\/adobe\/assets\//, '');
-    } catch {
-      // skip malformed src
-    }
-  });
-
-  const { scanDom } = await import('./dm-sdk.mjs');
-  scanDom();
-}
-
-/**
  * Loads everything that happens a lot later,
  * without impacting the user experience.
  */
 function loadDelayed() {
   // eslint-disable-next-line import/no-cycle
-  window.setTimeout(async () => {
-    await import('./delayed.js');
-    initDmSdk();
-  }, 3000);
+  window.setTimeout(() => import('./delayed.js'), 3000);
 }
 
 async function loadPage() {
