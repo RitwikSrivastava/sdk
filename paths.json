@@ -1,8 +1,8 @@
 {
   "mappings": [
-    "/content/aem-boilerplate/:/"
+    "/content/sdk/:/"
   ],
   "includes": [
-    "/content/aem-boilerplate/"
+    "/content/sdk/"
   ]
 }
