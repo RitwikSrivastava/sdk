@@ -18,9 +18,11 @@
       "id": "image",
       "fields": [
         {
-          "component": "aem-content",
+          "component": "custom-asset-namespace:custom-asset",
           "name": "image",
-          "label": "Image"
+          "label": "Image",
+          "configUrl": "content/dam/ritsriva-ue/config.json",
+          "valueType": "string"
         },
         {
           "component": "text",
