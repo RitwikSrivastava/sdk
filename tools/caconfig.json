@@ -1,0 +1,175 @@
+{
+  "repoNames": [
+    "author-p66302-e574366.adobeaemcloud.com",
+    "delivery-p66302-e574366.adobeaemcloud.com",
+    "delivery-p166604-e1781313.adobeaemcloud.com",
+    "author-p166604-e1781313.adobeaemcloud.com"
+  ],
+  "aemTierType": [
+    "delivery",
+    "author"
+],
+"expiryOptions": {
+  "allowSelectionAndDrag": false
+},
+  
+  "filterSchema": [
+  {
+  "fields": [
+  {
+  "defaultValue": ["image/*"],
+  "element": "checkbox",
+  "name": "type",
+  "options": [
+  {
+  "label": "Image",
+  "readOnly": true,
+  "value": "image/*"
+  }
+  ]
+  }
+  ],
+  "groupKey": "FileTypeGroup",
+  "header": "File Type"
+  },
+  {
+  "fields": [
+  {
+  "columns": 3,
+  "defaultValue": ["arena"],
+  "element": "taggroup",
+  "name": "property=xcm:keywords.id=",
+  "options": [
+  {
+  "label": "Demo",
+  "value": "demo"
+  }
+  ]
+  }
+  ],
+  "groupKey": "AssetTagsGroup",
+  "header": "Assets Tags"
+  }
+  
+  ],
+  
+  "filterSchemaMapping": {
+  
+  "author-p66302-e574366.adobeaemcloud.com": [
+  
+  {
+  
+  "fields": [
+  
+  {
+  
+  "defaultValue": ["image/*"],
+  
+  "element": "checkbox",
+  
+  "name": "type",
+  
+  "options": [
+  
+  {
+  
+  "label": "Image",
+  
+  "readOnly": true,
+  
+  "value": "image/*"
+  
+  }
+  
+  ]
+  
+  }
+  
+  ],
+  
+  "groupKey": "FileTypeGroup",
+  
+  "header": "File Type"
+  
+  },
+  
+  {
+  
+  "fields": [
+  
+  {
+  
+  "defaultValue": ["dam:assetStatus==approved"],
+  
+  "element": "radiogroup",
+  
+  "name": "property",
+  
+  "options": [
+  
+  {
+  
+  "label": "Approved",
+  
+  "value": "dam:assetStatus==approved"
+  
+  }
+  
+  ],
+  
+  "readOnly": true
+  
+  }
+  
+  ],
+  
+  "groupKey": "StatusGroup",
+  
+  "header": "Approval Status"
+  
+  },
+  
+  {
+  
+  "fields": [
+  
+  {
+  
+  "columns": 3,
+  
+  "defaultValue": ["arena"],
+  
+  "element": "taggroup",
+  
+  "name": "property=xcm:keywords.id=",
+  
+  "options": [
+  
+  {
+  
+  "label": "arena",
+  
+  "value": "arena"
+  
+  }
+  
+  ]
+  
+  }
+  
+  ],
+  
+  "groupKey": "AssetTagsGroup",
+  
+  "header": "Assets Tags"
+  
+  }
+  
+  ]
+  
+  },
+  
+  "alwaysUseDMDelivery": true,
+  
+  "rootPath": "/content/dam"
+  }

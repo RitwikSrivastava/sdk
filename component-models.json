@@ -30,7 +30,7 @@
         "component": "custom-asset-namespace:custom-asset",
         "name": "image",
         "label": "Image",
-        "configUrl": "content/dam/sdk/config.json",
+        "configUrl": "https://main--sdk--RitwikSrivastava.aem.page/tools/caconfig.json",
         "valueType": "string"
       },
       {
@@ -149,7 +149,7 @@
         "component": "custom-asset-namespace:custom-asset",
         "name": "image",
         "label": "Image",
-        "configUrl": "content/dam/sdk/config.json",
+        "configUrl": "https://main--sdk--RitwikSrivastava.aem.page/tools/caconfig.json",
         "valueType": "string"
       },
       {
@@ -197,7 +197,7 @@
         "component": "custom-asset-namespace:custom-asset",
         "name": "image",
         "label": "Image",
-        "configUrl": "content/dam/sdk/config.json",
+        "configUrl": "https://main--sdk--RitwikSrivastava.aem.page/tools/caconfig.json",
         "valueType": "string"
       },
       {
