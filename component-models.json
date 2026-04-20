@@ -30,7 +30,7 @@
         "component": "custom-asset-namespace:custom-asset",
         "name": "image",
         "label": "Image",
-        "configUrl": "content/dam/ritsriva-ue/config.json",
+        "configUrl": "content/dam/sdk/config.json",
         "valueType": "string"
       },
       {
@@ -149,7 +149,7 @@
         "component": "custom-asset-namespace:custom-asset",
         "name": "image",
         "label": "Image",
-        "configUrl": "content/dam/ritsriva-ue/config.json",
+        "configUrl": "content/dam/sdk/config.json",
         "valueType": "string"
       },
       {
@@ -197,7 +197,7 @@
         "component": "custom-asset-namespace:custom-asset",
         "name": "image",
         "label": "Image",
-        "configUrl": "content/dam/ritsriva-ue/config.json",
+        "configUrl": "content/dam/sdk/config.json",
         "valueType": "string"
       },
       {

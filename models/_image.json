@@ -21,7 +21,7 @@
           "component": "custom-asset-namespace:custom-asset",
           "name": "image",
           "label": "Image",
-          "configUrl": "content/dam/ritsriva-ue/config.json",
+          "configUrl": "https://main--sdk--RitwikSrivastava.aem.page/content/dam/ritsriva-ue/config.json",
           "valueType": "string"
         },
         {
