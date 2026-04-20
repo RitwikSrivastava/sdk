@@ -130,13 +130,48 @@ async function loadLazy(doc) {
 }
 
 /**
+ * Finds Dynamic Media images (Scene7 / OpenAPI) in the document, tags them
+ * with data-dm-* attributes, then activates the dm-sdk observer so images
+ * are served at the exact container width with smart DPR, LQIP, and lazy
+ * loading — all contributing to a higher Lighthouse performance score.
+ */
+async function initDmSdk() {
+  const dmImages = [...document.querySelectorAll('img')].filter((img) => {
+    const src = img.src || '';
+    return src.includes('scene7.com') || src.includes('adobeassets.com');
+  });
+
+  if (!dmImages.length) return;
+
+  dmImages.forEach((img) => {
+    if (img.dataset.dmSrc) return;
+    try {
+      const url = new URL(img.src);
+      img.dataset.dmOrigin = url.origin;
+      // Scene7:  /is/image/company/asset-name  → company/asset-name
+      // OpenAPI: /adobe/assets/urn:aaid:...    → urn:aaid:...
+      img.dataset.dmSrc = url.pathname
+        .replace(/^\/is\/image\//, '')
+        .replace(/^\/adobe\/assets\//, '');
+    } catch {
+      // skip malformed src
+    }
+  });
+
+  const { scanDom } = await import('./dm-sdk.mjs');
+  scanDom();
+}
+
+/**
  * Loads everything that happens a lot later,
  * without impacting the user experience.
  */
 function loadDelayed() {
   // eslint-disable-next-line import/no-cycle
-  window.setTimeout(() => import('./delayed.js'), 3000);
-  // load anything that can be postponed to the latest here
+  window.setTimeout(async () => {
+    await import('./delayed.js');
+    initDmSdk();
+  }, 3000);
 }
 
 async function loadPage() {

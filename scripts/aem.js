@@ -665,6 +665,26 @@ async function waitForFirstImage(section) {
   await new Promise((resolve) => {
     if (lcpCandidate && !lcpCandidate.complete) {
       lcpCandidate.setAttribute('loading', 'eager');
+      lcpCandidate.setAttribute('fetchpriority', 'high');
+      // Inject <link rel="preload"> for the LCP image so the browser can
+      // start fetching it as early as possible (Lighthouse LCP audit).
+      if (!document.head.querySelector('link[rel="preload"][as="image"]')) {
+        const preload = document.createElement('link');
+        preload.rel = 'preload';
+        preload.as = 'image';
+        preload.setAttribute('fetchpriority', 'high');
+        const picture = lcpCandidate.closest('picture');
+        const webpSource = picture?.querySelector('source[type="image/webp"]');
+        if (webpSource) {
+          const srcset = webpSource.getAttribute('srcset');
+          const media = webpSource.getAttribute('media');
+          if (srcset) preload.setAttribute('imagesrcset', srcset);
+          if (media) preload.setAttribute('imagesizes', media);
+        } else if (lcpCandidate.src) {
+          preload.href = lcpCandidate.src;
+        }
+        document.head.appendChild(preload);
+      }
       lcpCandidate.addEventListener('load', resolve);
       lcpCandidate.addEventListener('error', resolve);
     } else {

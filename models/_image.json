@@ -18,10 +18,9 @@
       "id": "image",
       "fields": [
         {
-          "component": "reference",
+          "component": "aem-content",
           "name": "image",
-          "label": "Image",
-          "multi": false
+          "label": "Image"
         },
         {
           "component": "text",

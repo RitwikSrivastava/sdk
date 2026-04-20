@@ -36,11 +36,9 @@
       "id": "card",
       "fields": [
         {
-          "component": "reference",
-          "valueType": "string",
+          "component": "aem-content",
           "name": "image",
-          "label": "Image",
-          "multi": false
+          "label": "Image"
         },
         {
           "component": "richtext",
