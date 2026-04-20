@@ -59,6 +59,53 @@ async function loadFonts() {
 }
 
 /**
+ * Returns true for Dynamic Media delivery URLs (Scene7 or OpenAPI).
+ * @param {string} url
+ * @returns {boolean}
+ */
+export function isDmUrl(url) {
+  return url.includes('scene7.com') || url.includes('adobeassets.com');
+}
+
+/**
+ * Replaces <a href="DM-url"> links (and standalone <picture> elements whose
+ * source points to a DM URL) with <img> elements that carry both a direct
+ * src (for immediate rendering) and data-dm-* attributes (so the dm-sdk can
+ * later apply adaptive sizing, LQIP and smart DPR on top).
+ *
+ * This is the Approach-B "link rewriting" step: the UE content model stores
+ * the DAM delivery URL as a string/link; this function converts it to a
+ * renderable image before any block JS runs.
+ * @param {Element} main
+ */
+export function decorateExternalImages(main) {
+  let firstDm = true;
+
+  main.querySelectorAll('a[href]').forEach((a) => {
+    if (!isDmUrl(a.href)) return;
+    try {
+      const url = new URL(a.href);
+      const img = document.createElement('img');
+      // Set src directly so the image renders immediately (UE + published page).
+      img.src = a.href;
+      img.dataset.dmOrigin = url.origin;
+      img.dataset.dmSrc = url.pathname.replace(/^\/+/, '');
+      img.alt = a.textContent.trim() === a.href ? '' : a.textContent.trim();
+      if (firstDm) {
+        img.setAttribute('fetchpriority', 'high');
+        img.loading = 'eager';
+        firstDm = false;
+      } else {
+        img.loading = 'lazy';
+      }
+      a.replaceWith(img);
+    } catch {
+      // skip malformed URLs
+    }
+  });
+}
+
+/**
  * Builds all synthetic blocks in a container element.
  * @param {Element} main The container element
  */
@@ -81,6 +128,8 @@ export function decorateMain(main) {
   decorateButtons(main);
   decorateIcons(main);
   buildAutoBlocks(main);
+  // Convert DM delivery URL links → <img> before blocks decorate
+  decorateExternalImages(main);
   decorateSections(main);
   decorateBlocks(main);
 }
