@@ -661,35 +661,43 @@ async function loadFooter(footer) {
  * @param {Element} section section element
  */
 async function waitForFirstImage(section) {
-  const lcpCandidate = section.querySelector('img');
+  // Prefer the DM priority image if one exists, otherwise fall back to the
+  // first <img> in the section (DOM order = likely LCP candidate).
+  const lcpCandidate = section.querySelector('img[data-dm-priority]')
+    || section.querySelector('img');
+
   await new Promise((resolve) => {
-    if (lcpCandidate && !lcpCandidate.complete) {
-      lcpCandidate.setAttribute('loading', 'eager');
-      lcpCandidate.setAttribute('fetchpriority', 'high');
-      // Inject <link rel="preload"> for the LCP image so the browser can
-      // start fetching it as early as possible (Lighthouse LCP audit).
-      if (!document.head.querySelector('link[rel="preload"][as="image"]')) {
-        const preload = document.createElement('link');
-        preload.rel = 'preload';
-        preload.as = 'image';
-        preload.setAttribute('fetchpriority', 'high');
-        const picture = lcpCandidate.closest('picture');
-        const webpSource = picture?.querySelector('source[type="image/webp"]');
-        if (webpSource) {
-          const srcset = webpSource.getAttribute('srcset');
-          const media = webpSource.getAttribute('media');
-          if (srcset) preload.setAttribute('imagesrcset', srcset);
-          if (media) preload.setAttribute('imagesizes', media);
-        } else if (lcpCandidate.src) {
-          preload.href = lcpCandidate.src;
-        }
-        document.head.appendChild(preload);
+    if (!lcpCandidate) { resolve(); return; }
+
+    lcpCandidate.setAttribute('fetchpriority', 'high');
+
+    // DM image: src is set later by the SDK — nothing to wait for here.
+    // The SDK's own preload injection handles the <link rel="preload">.
+    if (lcpCandidate.dataset.dmSrc) { resolve(); return; }
+
+    // Franklin CDN image: inject <link rel="preload"> and wait for load.
+    lcpCandidate.setAttribute('loading', 'eager');
+    if (!document.head.querySelector('link[rel="preload"][as="image"]')) {
+      const preload = document.createElement('link');
+      preload.rel = 'preload';
+      preload.as = 'image';
+      preload.setAttribute('fetchpriority', 'high');
+      const picture = lcpCandidate.closest('picture');
+      const webpSource = picture?.querySelector('source[type="image/webp"]');
+      if (webpSource) {
+        const srcset = webpSource.getAttribute('srcset');
+        const media = webpSource.getAttribute('media');
+        if (srcset) preload.setAttribute('imagesrcset', srcset);
+        if (media) preload.setAttribute('imagesizes', media);
+      } else if (lcpCandidate.src) {
+        preload.href = lcpCandidate.src;
       }
-      lcpCandidate.addEventListener('load', resolve);
-      lcpCandidate.addEventListener('error', resolve);
-    } else {
-      resolve();
+      document.head.appendChild(preload);
     }
+
+    if (lcpCandidate.complete) { resolve(); return; }
+    lcpCandidate.addEventListener('load', resolve);
+    lcpCandidate.addEventListener('error', resolve);
   });
 }
 

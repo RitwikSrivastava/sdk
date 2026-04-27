@@ -1,4 +1,4 @@
-import { getDmImageUrlFromRow, initDmSdkInRoot } from '../../scripts/utils/dm-sdk-loader.js';
+import { getDmImageUrlFromRow, initDmSdkInRoot } from '../../scripts/utils/dm-integration.js';
 
 export default async function decorate(block) {
   const rows = [...block.children];
