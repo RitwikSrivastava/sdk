@@ -5,7 +5,11 @@
 
 .hero {
   position: relative;
-  min-height: 60vh;
+  /* Height tracks viewport WIDTH, not height — keeps proportion matching a
+     landscape image so object-fit: cover never needs to zoom to fill height.
+     16/6 ≈ a cinematic 2.67:1 crop. Adjust numerator/denominator to taste. */
+  aspect-ratio: 16 / 6;
+  min-height: 320px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
