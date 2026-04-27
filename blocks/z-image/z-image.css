@@ -6,8 +6,12 @@
 /* ── Each item is a full-width two-column row ─────────────── */
 .z-image-item {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  min-height: 480px;
+  grid-template-columns: 55% 45%;
+  min-height: 560px;
+}
+
+.z-image-item--reverse {
+  grid-template-columns: 45% 55%;
 }
 
 /* ── Image fills its cell completely ──────────────────────── */
@@ -16,7 +20,9 @@
   position: relative;
 }
 
-.z-image-media img {
+.z-image-media img,
+.z-image-media picture,
+.z-image-media picture img {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -24,56 +30,101 @@
   object-fit: cover;
   object-position: center;
   aspect-ratio: unset !important;
-  transition: transform 0.6s ease;
+  transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-.z-image-item:hover .z-image-media img {
-  transform: scale(1.04);
+.z-image-item:hover .z-image-media img,
+.z-image-item:hover .z-image-media picture img {
+  transform: scale(1.05);
 }
 
-/* ── Text cell ────────────────────────────────────────────── */
+/* ── Text panel ───────────────────────────────────────────── */
 .z-image-text {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 64px 72px;
-  background-color: var(--navy-mid, #0d1f3c);
+  padding: 72px 80px;
+  background-color: #0d1f3c;
+  background-image: radial-gradient(ellipse at 30% 50%, #102848 0%, #0d1f3c 70%);
+  position: relative;
 }
 
-/* Gold label above heading */
+/* Gold side-rule accent */
+.z-image-item--normal .z-image-text::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 15%;
+  height: 70%;
+  width: 3px;
+  background: linear-gradient(to bottom, transparent, #c9a84c 30%, #c9a84c 70%, transparent);
+}
+
+.z-image-item--reverse .z-image-text::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 15%;
+  height: 70%;
+  width: 3px;
+  background: linear-gradient(to bottom, transparent, #c9a84c 30%, #c9a84c 70%, transparent);
+}
+
+/* ── Typography ───────────────────────────────────────────── */
+
+/* Eyebrow label — first <p> if it immediately precedes an h2/h3 */
+.z-image-text > p:first-child {
+  font-family: var(--body-font-family, sans-serif);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #c9a84c;
+  margin: 0 0 1.25em;
+}
+
 .z-image-text h2,
 .z-image-text h3 {
   font-family: var(--heading-font-family, georgia, serif);
-  font-size: var(--heading-font-size-l, 34px);
+  font-size: clamp(28px, 2.8vw, 44px);
   font-weight: 400;
-  color: var(--cream, #e8dcc8);
-  margin-top: 0;
-  margin-bottom: 0.5em;
-  line-height: 1.2;
+  font-style: italic;
+  color: #e8dcc8;
+  margin: 0 0 0.6em;
+  line-height: 1.15;
 }
 
-.z-image-text h2::before,
-.z-image-text h3::before {
+.z-image-text h2::after,
+.z-image-text h3::after {
   content: '';
   display: block;
-  width: 32px;
-  height: 2px;
-  background-color: var(--gold, #c9a84c);
-  margin-bottom: 1em;
+  width: 48px;
+  height: 1px;
+  background-color: #c9a84c;
+  margin-top: 0.75em;
+  margin-bottom: 0.1em;
 }
 
 .z-image-text p {
-  color: var(--muted, #7a98b8);
-  line-height: 1.8;
-  margin: 0;
-  font-size: var(--body-font-size-s);
+  color: #7a98b8;
+  line-height: 1.85;
+  margin: 0.75em 0 0;
+  font-size: 15px;
+  max-width: 38ch;
 }
 
-.z-image-text p + p {
-  margin-top: 0.75em;
+/* Override eyebrow label margin when it's actually body text (no heading after) */
+.z-image-text > p:first-child:last-child {
+  font-family: var(--heading-font-family, georgia, serif);
+  font-size: clamp(22px, 2.2vw, 32px);
+  font-weight: 400;
+  font-style: italic;
+  color: #e8dcc8;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
-/* ── Alternating: even rows flip image to the right ─────────── */
+/* ── Alternating layout ───────────────────────────────────── */
 .z-image-item--reverse .z-image-media {
   order: 2;
 }
@@ -82,30 +133,47 @@
   order: 1;
 }
 
-/* ── Row separator ───────────────────────────────────────────── */
+/* ── Row separator ────────────────────────────────────────── */
 .z-image-item + .z-image-item {
-  border-top: 1px solid var(--ocean, #1a3a5c);
+  border-top: 1px solid rgba(26, 58, 92, 0.6);
 }
 
-/* ── Mobile: stack vertically, image always on top ──────────── */
+/* ── Mobile: stack vertically, image always on top ───────── */
 @media (width < 900px) {
-  .z-image-item {
+  .z-image-item,
+  .z-image-item--reverse {
     grid-template-columns: 1fr;
     min-height: unset;
   }
 
   .z-image-media {
-    min-height: 280px;
+    min-height: 300px;
     order: -1 !important;
   }
 
-  .z-image-media img {
+  .z-image-media img,
+  .z-image-media picture img {
     position: static;
-    height: 280px;
+    height: 300px;
+    width: 100%;
   }
 
   .z-image-text {
     order: 1 !important;
-    padding: 40px 24px;
+    padding: 48px 28px;
+  }
+
+  .z-image-item--normal .z-image-text::before,
+  .z-image-item--reverse .z-image-text::before {
+    display: none;
+  }
+
+  .z-image-text h2,
+  .z-image-text h3 {
+    font-size: 28px;
+  }
+
+  .z-image-text p {
+    max-width: 100%;
   }
 }
