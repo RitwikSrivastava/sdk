@@ -182,6 +182,9 @@ export function getDmImageUrlFromRow(row) {
   if (anchor?.href && (isScene7Url(anchor.href) || isDMOpenAPIUrl(anchor.href))) return anchor.href;
   const img = row.querySelector('img[src]');
   if (img?.src && (isScene7Url(img.src) || isDMOpenAPIUrl(img.src))) return img.src;
+  // Handle img already decorated by decorateExternalImages (src not set yet, but sourceUrl is)
+  const dmImg = row.querySelector('img[data-dm-source-url]');
+  if (dmImg?.dataset.dmSourceUrl) return dmImg.dataset.dmSourceUrl;
   return '';
 }
 

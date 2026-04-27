@@ -1,6 +1,7 @@
 .columns > div {
   display: flex;
   flex-direction: column;
+  gap: 0;
 }
 
 .columns img {
@@ -9,6 +10,12 @@
 
 .columns > div > div {
   order: 1;
+  padding: 0 0 2em;
+  border-bottom: 1px solid var(--ocean, #1a3a5c);
+}
+
+.columns > div > div:last-child {
+  border-bottom: none;
 }
 
 .columns > div > .columns-img-col {
@@ -19,15 +26,39 @@
   display: block;
 }
 
+.columns h2 {
+  font-size: var(--heading-font-size-m);
+  color: var(--gold, #c9a84c);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  margin-bottom: 0.5em;
+  font-family: var(--body-font-family);
+  font-size: var(--body-font-size-s);
+}
+
+.columns p {
+  color: var(--text-color, #e8dcc8);
+  line-height: 1.75;
+}
+
 @media (width >= 900px) {
   .columns > div {
-    align-items: center;
-    flex-direction: unset;
-    gap: 24px;
+    align-items: flex-start;
+    flex-direction: row;
+    gap: 64px;
   }
 
   .columns > div > div {
     flex: 1;
     order: unset;
+    border-bottom: none;
+    padding: 0 0 0 48px;
+    border-left: 1px solid var(--ocean, #1a3a5c);
+  }
+
+  .columns > div > div:first-child {
+    border-left: none;
+    padding-left: 0;
   }
 }

@@ -1,9 +1,11 @@
 /* header and nav layout */
 header .nav-wrapper {
-  background-color: var(--background-color);
+  background-color: rgba(7, 15, 28, 0.96);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.2);
   width: 100%;
-  z-index: 2;
+  z-index: 100;
   position: fixed;
+  backdrop-filter: blur(8px);
 }
 
 header nav {
@@ -28,11 +30,12 @@ header nav[aria-expanded='true'] {
     'tools tools' var(--nav-height) / auto 1fr;
   overflow-y: auto;
   min-height: 100dvh;
+  background-color: var(--navy, #070f1c);
 }
 
 @media (width >= 900px) {
   header .nav-wrapper {
-    position: relative;
+    position: fixed;
   }
 
   header nav {
@@ -40,7 +43,7 @@ header nav[aria-expanded='true'] {
     justify-content: space-between;
     gap: 0 32px;
     max-width: 1264px;
-    padding: 0 32px;
+    padding: 0 48px;
   }
 
   header nav[aria-expanded='true'] {
@@ -55,7 +58,14 @@ header nav p {
 }
 
 header nav a:any-link {
-  color: currentcolor;
+  color: var(--cream, #e8dcc8);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+header nav a:hover {
+  color: var(--gold, #c9a84c);
+  text-decoration: none;
 }
 
 /* hamburger */
@@ -72,8 +82,8 @@ header nav .nav-hamburger button {
   border: 0;
   border-radius: 0;
   padding: 0;
-  background-color: var(--background-color);
-  color: inherit;
+  background-color: transparent;
+  color: var(--cream, #e8dcc8);
   overflow: initial;
   text-overflow: initial;
   white-space: initial;
@@ -99,8 +109,8 @@ header nav[aria-expanded='false'] .nav-hamburger-icon,
 header nav[aria-expanded='false'] .nav-hamburger-icon::before,
 header nav[aria-expanded='false'] .nav-hamburger-icon::after {
   height: 2px;
-  border-radius: 2px;
-  background: currentcolor;
+  border-radius: 0;
+  background: var(--cream, #e8dcc8);
 }
 
 header nav[aria-expanded='false'] .nav-hamburger-icon::before {
@@ -123,7 +133,7 @@ header nav[aria-expanded='true'] .nav-hamburger-icon::after {
   transform-origin: 2px 1px;
   width: 24px;
   height: 2px;
-  border-radius: 2px;
+  border-radius: 0;
 }
 
 header nav[aria-expanded='true'] .nav-hamburger-icon::after {
@@ -142,10 +152,23 @@ header nav[aria-expanded='true'] .nav-hamburger-icon::after {
 /* brand */
 header .nav-brand {
   grid-area: brand;
-  flex-basis: 128px;
+  flex-basis: auto;
   font-size: var(--heading-font-size-s);
   font-weight: 700;
   line-height: 1;
+  font-family: var(--heading-font-family, georgia, serif);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cream, #e8dcc8);
+}
+
+header .nav-brand a:any-link {
+  color: var(--cream, #e8dcc8);
+  letter-spacing: inherit;
+}
+
+header .nav-brand a:hover {
+  color: var(--gold, #c9a84c);
 }
 
 header nav .nav-brand img {
@@ -170,7 +193,9 @@ header nav[aria-expanded='true'] .nav-sections {
 header nav .nav-sections ul {
   list-style: none;
   padding-left: 0;
-  font-size: var(--body-font-size-s);
+  font-size: var(--body-font-size-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 header nav .nav-sections ul > li {
@@ -211,9 +236,9 @@ header nav .nav-sections ul > li > ul > li {
     transform: rotate(135deg);
     width: 6px;
     height: 6px;
-    border: 2px solid currentcolor;
-    border-radius: 0 1px 0 0;
-    border-width: 2px 2px 0 0;
+    border: 1px solid currentcolor;
+    border-radius: 0;
+    border-width: 1px 1px 0 0;
   }
 
   header nav .nav-sections .nav-drop[aria-expanded='true']::after {
@@ -224,7 +249,7 @@ header nav .nav-sections ul > li > ul > li {
 
   header nav .nav-sections ul {
     display: flex;
-    gap: 24px;
+    gap: 36px;
     margin: 0;
   }
 
@@ -245,7 +270,8 @@ header nav .nav-sections ul > li > ul > li {
     width: 200px;
     top: 150%;
     padding: 16px;
-    background-color: var(--light-color);
+    background-color: var(--navy-mid, #0d1f3c);
+    border: 1px solid rgba(201, 168, 76, 0.2);
     white-space: initial;
   }
 
@@ -258,7 +284,7 @@ header nav .nav-sections ul > li > ul > li {
     height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
-    border-bottom: 8px solid var(--light-color);
+    border-bottom: 8px solid var(--navy-mid, #0d1f3c);
   }
 
   header nav .nav-sections .default-content-wrapper > ul > li > ul > li {
@@ -266,7 +292,24 @@ header nav .nav-sections ul > li > ul > li {
   }
 }
 
-/* tools */
+/* tools — "Book Now" CTA button */
 header nav .nav-tools {
   grid-area: tools;
+}
+
+header nav .nav-tools a.button:any-link {
+  border: 1px solid var(--gold, #c9a84c);
+  background-color: transparent;
+  color: var(--gold, #c9a84c);
+  border-radius: 0;
+  letter-spacing: 0.1em;
+  font-size: 12px;
+  text-transform: uppercase;
+  padding: 0.55em 1.4em;
+  margin: 0;
+}
+
+header nav .nav-tools a.button:hover {
+  background-color: var(--gold, #c9a84c);
+  color: var(--navy, #070f1c);
 }
