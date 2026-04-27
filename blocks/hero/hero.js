@@ -24,6 +24,13 @@ export default async function decorate(block) {
     img.setAttribute('data-dm-role', 'hero');
     img.setAttribute('fetchpriority', 'high');
     img.loading = 'eager';
+    // Prevent SDK from setting width/height attributes and aspect-ratio inline style.
+    // The hero image is a CSS-controlled full-bleed background — layout is handled
+    // entirely by `inset: 0; width: 100%; height: 100%` in hero.css, not by
+    // the image's intrinsic dimensions. Without this flag the SDK's ResizeObserver
+    // continuously re-measures and re-fetches as aspect-ratio conflicts with the
+    // absolutely-positioned container, causing visible progressive zoom.
+    img.setAttribute('data-dm-no-dimensions', '');
 
     // Clear the image row and insert the managed img
     imageRow.textContent = '';

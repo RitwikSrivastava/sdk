@@ -23,10 +23,14 @@
 .hero > div:first-child picture {
   position: absolute;
   inset: 0;
+  /* Override main img { width: auto; height: auto } from styles.css */
   width: 100%;
   height: 100%;
+  max-width: unset;
   object-fit: cover;
   object-position: center 35%;
+  /* Prevent SDK aspect-ratio from fighting CSS layout */
+  aspect-ratio: unset;
 }
 
 .hero > div:first-child picture img {
