@@ -1,13 +1,16 @@
 .z-image-container .z-image-wrapper {
   max-width: unset;
-  padding: 0;
+  padding: 0 48px;
 }
 
 /* ── Each item is a full-width two-column row ─────────────── */
 .z-image-item {
   display: grid;
   grid-template-columns: 55% 45%;
-  min-height: 560px;
+  min-height: 360px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 24px;
 }
 
 .z-image-item--reverse {
@@ -133,13 +136,13 @@
   order: 1;
 }
 
-/* ── Row separator ────────────────────────────────────────── */
-.z-image-item + .z-image-item {
-  border-top: 1px solid rgba(26, 58, 92, 0.6);
-}
 
 /* ── Mobile: stack vertically, image always on top ───────── */
 @media (width < 900px) {
+  .z-image-container .z-image-wrapper {
+    padding: 0 16px;
+  }
+
   .z-image-item,
   .z-image-item--reverse {
     grid-template-columns: 1fr;
