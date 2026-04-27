@@ -9,7 +9,7 @@ export default async function decorate(block) {
     item.classList.add(i % 2 === 0 ? 'z-image-item--normal' : 'z-image-item--reverse');
     moveInstrumentation(row, item);
 
-    const [imageCell, textCell] = [...row.children];
+    const [imageCell, ...textCells] = [...row.children];
 
     // Image cell
     const dmUrl = getDmImageUrlFromRow(imageCell);
@@ -19,7 +19,7 @@ export default async function decorate(block) {
       img.dataset.dmSourceUrl = dmUrl;
       try { img.dataset.dmOrigin = new URL(dmUrl).origin; } catch { /* ignore */ }
       img.setAttribute('data-dm-no-dimensions', '');
-      img.alt = textCell?.querySelector('h2, h3')?.textContent?.trim() || '';
+      img.alt = textCells[0]?.querySelector('h2, h3')?.textContent?.trim() || '';
       img.loading = 'lazy';
       imageCell.textContent = '';
       imageCell.append(img);
@@ -32,10 +32,14 @@ export default async function decorate(block) {
     }
     imageCell.className = 'z-image-media';
 
-    if (textCell) textCell.className = 'z-image-text';
+    // Text panel — wrap all remaining cells into one div
+    const textPanel = document.createElement('div');
+    textPanel.className = 'z-image-text';
+    textCells.forEach((cell) => {
+      while (cell.firstChild) textPanel.append(cell.firstChild);
+    });
 
-    item.append(imageCell);
-    if (textCell) item.append(textCell);
+    item.append(imageCell, textPanel);
     row.replaceWith(item);
   }));
 

@@ -201,12 +201,6 @@
         "valueType": "string"
       },
       {
-        "component": "text",
-        "name": "heading",
-        "label": "Heading",
-        "valueType": "string"
-      },
-      {
         "component": "richtext",
         "name": "text",
         "label": "Text",
