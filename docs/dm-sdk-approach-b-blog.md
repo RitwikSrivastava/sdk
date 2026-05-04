@@ -175,6 +175,12 @@ The `activateDmSdk` call is intentionally not awaited before `loadSection`. This
 
 ---
 
+## Live Reference
+
+The integration described in this post is running in production at **[main--sdk--ritwiksrivastava.aem.live](https://main--sdk--ritwiksrivastava.aem.live/)**. This EDS site uses Approach B throughout — all image fields are configured with the Content Advisor picker and `caconfig.json` — and the DM SDK is wired into `scripts.js` exactly as described above. The hero image, cards, and zigzag image sections all receive SDK-managed, responsive DM delivery URLs with preload hints for the LCP candidate.
+
+---
+
 ## Before and After
 
 | | Without SDK | With SDK |
@@ -194,7 +200,7 @@ Pages that previously scored Poor on Lighthouse LCP due to Approach B image hand
 
 **For authors:** Nothing changes. The same Content Advisor picker, the same asset selection experience. The only difference is that images actually show up — and show up fast.
 
-**For developers:** Approach B setup is two configuration files (component model field + `caconfig.json`). The SDK integration on top of that is two files to copy and four lines to add to `scripts.js`. Once done, all future pages benefit automatically.
+**For developers:** The SDK integration on top of Approach B is two files to copy and four lines to add to `scripts.js`. Once done, all future pages benefit automatically.
 
 **For the business:** DM's full delivery capabilities — Smart Imaging, Smart Crop, format optimisation — are now actually exercised on every page load, at the right size for every device. The investment in Dynamic Media delivers its full value.
 

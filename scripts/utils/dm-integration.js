@@ -1,7 +1,7 @@
 /**
  * Adobe Dynamic Media Integration for Edge Delivery Services — Approach B
  *
- * Drop this file into scripts/utils/ and vendor dm-sdk.mjs into scripts/lib/.
+ * Drop this file into scripts/utils/ and vendor DmSdk.js into scripts/lib/.
  * Then make four surgical additions to your scripts.js (see comments below).
  *
  * ─── What to add to scripts.js ────────────────────────────────────────────
@@ -24,7 +24,7 @@
  * No block JS changes required. No build step. No npm install.
  */
 
-const DM_SDK_URL = new URL('../lib/dm-sdk.mjs', import.meta.url).href;
+const DM_SDK_URL = new URL('../lib/DmSdk.js', import.meta.url).href;
 const SDK_PROMISE_KEY = '__edsDmSdk';
 
 // ---------------------------------------------------------------------------
@@ -79,12 +79,20 @@ function buildDmImg(parsed, altText, isPriority) {
 // ---------------------------------------------------------------------------
 
 /**
- * Loads dm-sdk.mjs exactly once per page (singleton).
+ * Loads DmSdk.js (UMD bundle) exactly once per page (singleton).
+ * Uses script tag injection because DmSdk.js is a UMD/window bundle, not ESM.
+ * Resolves with window.dmViewers.DmSdk (the named exports namespace).
  * @returns {Promise}
  */
 export function loadDmSdk() {
   if (!window[SDK_PROMISE_KEY]) {
-    window[SDK_PROMISE_KEY] = import(DM_SDK_URL);
+    window[SDK_PROMISE_KEY] = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = DM_SDK_URL;
+      script.onload = () => resolve(window.dmViewers?.DmSdk);
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
   }
   return window[SDK_PROMISE_KEY];
 }
@@ -142,7 +150,7 @@ export async function activateDmSdk(root) {
   if (!root) return;
   try {
     const sdk = await loadDmSdk();
-    if (typeof sdk.scanDom === 'function') {
+    if (typeof sdk?.scanDom === 'function') {
       requestAnimationFrame(() => sdk.scanDom(root));
     }
   } catch (err) {
@@ -199,7 +207,7 @@ export async function initDmSdkInRoot(root, onFallback) {
   if (!root) return;
   try {
     const sdk = await loadDmSdk();
-    if (typeof sdk.scanDom === 'function' && root.querySelector('img[data-dm-src]:not([data-dm-managed])')) {
+    if (typeof sdk?.scanDom === 'function' && root.querySelector('img[data-dm-src]:not([data-dm-managed])')) {
       sdk.scanDom(root);
     }
   } catch {
