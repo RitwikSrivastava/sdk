@@ -24,7 +24,7 @@
  * No block JS changes required. No build step. No npm install.
  */
 
-const DM_SDK_URL = new URL('../lib/DmSdk.js', import.meta.url).href;
+const DM_SDK_URL = 'https://delivery-p64653-e342218-cmstg.adobeaemcloud.com/adobe/assets/urn:aaid:aem:dmviewers-html5/as/DmSdk.js';
 const SDK_PROMISE_KEY = '__edsDmSdk';
 
 // ---------------------------------------------------------------------------
