@@ -14,7 +14,7 @@ This post explains the standard way Dynamic Media images work in EDS, why that a
 
 Adobe Dynamic Media (DM) is the enterprise image service built into AEM: it handles Smart Imaging, responsive cropping, format conversion (WebP, AVIF), and CDN-accelerated delivery. When an author selects an asset from the AEM DAM for use on an EDS page, DM provides a delivery URL — a direct link to the asset on the DM CDN.
 
-In Universal Editor, authors click an image field and the Content Advisor picker opens. They browse the DAM, select an image, and confirm. Simple.
+In Universal Editor, authors click an image field and the Custom Content Advisor picker opens. They browse the DAM, select an image, and confirm. Simple.
 
 What happens behind the scenes is where things get interesting.
 
@@ -35,11 +35,11 @@ The page's JavaScript is responsible for converting this link into an actual `<i
 
 ### Setting Up Approach B: Two Developer Steps
 
-Before any Lighthouse optimisation, your development team needs to configure two things so that the Content Advisor picker is used for image fields and returns the correct DM delivery URL.
+Before any Lighthouse optimisation, your development team needs to configure two things so that the Custom Content Advisor picker is used for image fields and returns the correct DM delivery URL.
 
-**Step A — Configure the Content Advisor picker in `component-models.json`**
+**Step A — Configure the Custom Content Advisor picker in `component-models.json`**
 
-Image fields in your component model are updated to use the Content Advisor component instead of the standard AEM assets browser. This tells Universal Editor to open the Content Advisor picker when an author clicks an image field:
+Image fields in your component model are updated to use the Custom component instead of the standard AEM assets browser. This tells Universal Editor to open the Custom Content Advisor picker when an author clicks an image field:
 
 ```json
 {
