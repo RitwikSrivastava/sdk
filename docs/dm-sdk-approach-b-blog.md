@@ -90,48 +90,61 @@ The DM delivery URL stored as a link is a static URL — the same URL is served 
 
 The result: pages using Approach B without any additional handling commonly score **Poor on Lighthouse LCP**. The browser simply cannot know to prioritise an image hidden inside a hyperlink.
 
-### What the DM SDK Does
+### How the DM SDK Solves Each Problem
 
-The `@adobe/dm-sdk` is a small, self-contained JavaScript module (~13KB, no dependencies) designed to make DM images smart — responsive, lazy-loaded, DPR-aware, and LCP-optimised — with no manual `srcset` or `sizes` attributes required.
+**Problem 1 — LCP invisible to the preload scanner → SDK injects a `<link rel="preload">` as early as JS allows**
 
-Its contract is simple: give it an `<img>` element with a `data-dm-src` attribute containing the DM asset path, and it does the rest.
+The raw HTML still contains `<a href>` — the browser's preload scanner (which runs before JavaScript) cannot see it as an image, and this does not change. What the SDK does is close that gap as much as possible within the JavaScript execution window: `decorateExternalImages()` converts the link to `<img data-dm-src>` before blocks run, and the SDK's `scanDom()` immediately injects a `<link rel="preload" fetchpriority="high">` into `<head>`. The browser's fetch scheduler picks this up and starts downloading the LCP image ahead of below-fold resources. This is not the same as a parser-discovered preload — the Lighthouse "Preload LCP image" audit will still flag this — but it is a significant improvement over no preload hint at all.
+
+**Problem 2 — No `fetchpriority` signal → SDK promotes the LCP candidate automatically**
+
+The SDK identifies the LCP candidate using a heuristic: if an image is large, positioned in the upper 90% of the viewport, and occupies at least 12% of the viewport area, it is treated as priority. The SDK sets `fetchpriority="high"` on the `<img>` element and includes it on the preload hint. If the integrator explicitly tags the hero with `data-dm-priority`, that signal is honoured directly. Either way, the network stack gets the strongest possible download priority signal.
+
+**Problem 3 — No responsive sizing → SDK computes the exact URL per device**
+
+Instead of using the static URL stored by the author, the SDK measures the image element's actual rendered container width using `ResizeObserver`, multiplies by the device pixel ratio (`window.devicePixelRatio`), snaps to a configurable width bucket (default: 10px steps, for CDN cache hit efficiency), and constructs a DM URL with the precise `width` and `dpr` parameters. A 375px mobile phone with a 3× screen requests a 1125px image; a 1440px laptop with a 2× display requests a 2880px image — all from the same authored URL, with no `srcset` or `sizes` required.
+
+### What the DM SDK Does, End to End
+
+The SDK is a small (~16KB), dependency-free JavaScript module. Its sole job is to find `<img data-dm-src="...">` elements on the page and make them smart — the right size, the right priority, loaded at the right time.
+
+Here is the full pipeline, from author action to fast image:
 
 ```
-Author picks image in UE
+Author selects image in Universal Editor
         ↓
-DM delivery URL stored as <a href> in page HTML  [Approach B — already done]
+Content Advisor picker stores DM delivery URL as <a href> in page content
         ↓
-EDS publishes page — browser sees a text link
+EDS publishes page — raw HTML contains <a href="https://delivery-p...">
         ↓
-scripts.js: decorateExternalImages()
-    <a href="https://delivery-p..."> → <img data-dm-src="..." fetchpriority="high">
-        ↓ (in parallel)
-dm-sdk.mjs loads → scanDom() runs:
-    • Injects <link rel="preload" fetchpriority="high"> for the hero image
-    • Sets img.src to a width-aware, DPR-correct DM URL
-    • Applies LQIP blurred placeholder for below-fold images
-    • Attaches ResizeObserver for responsive upgrades on resize
+decorateExternalImages() runs (before block JS)
+  → converts <a href> to <img data-dm-src>
+  → adds fetchpriority="high" to the first (hero) image
         ↓
-Browser downloads the right image at the right size → LCP fires early
+DmSdk.js loads from Adobe CDN (in parallel with first section rendering)
+        ↓
+scanDom() runs
+  → injects <link rel="preload" fetchpriority="high"> for the hero image
+  → computes width × DPR URL for each image via ResizeObserver
+  → sets LQIP placeholder for below-fold images
+        ↓
+Browser fetches hero image with highest network priority
+LCP fires early
 ```
 
-For the hero image (the LCP candidate), the SDK immediately injects a `<link rel="preload" fetchpriority="high">` into the document `<head>` and sets the image URL — computed at the actual container width, multiplied by the device pixel ratio. The browser can start fetching the image before anything else on the page competes for bandwidth.
+**For the hero (LCP) image:** The SDK immediately injects a `<link rel="preload" fetchpriority="high">` into `<head>` and sets an adaptive image URL sized to the actual container width multiplied by the device pixel ratio. The URL is width-bucketed in 10px steps so similar devices share CDN cache hits.
 
-For images below the fold, the SDK applies a low-quality blurred placeholder (LQIP) immediately, and loads the full-resolution image only when it enters the viewport. This keeps initial page weight low without sacrificing visual quality.
+**For below-fold images:** Instead of leaving the full-resolution image to load with the page, the SDK shows a blurred Low-Quality Image Placeholder (LQIP) immediately — a tiny, fast-loading version of the image that gives the page visual completeness. The full-resolution image loads only when the image scrolls into the viewport, via `IntersectionObserver`.
 
-### The SDK Integration: Two Files, Four Lines
+### The SDK Integration: One File, Four Lines
 
 This is a developer-done-once change. Once pushed to the repo, every page in the site gets smart DM images automatically — authors do not change their workflow at all.
 
-**Step 1 — Add the SDK file**
+**Step 1 — Add the integration utility**
 
-Copy `dm-sdk.mjs` into `scripts/lib/`. This is a single file — no build step, no npm install. It is vendored directly into the project so there is no external CDN dependency.
+Copy `scripts/utils/dm-integration.js` into your EDS project. This single file contains everything needed: the link-to-image rewriter, the SDK loader, the LCP promoter, and the per-block helpers. The SDK itself (`DmSdk.js`) loads automatically from the Adobe CDN — no file to download, no npm install, no build step.
 
-**Step 2 — Add the integration utility**
-
-Copy `scripts/utils/dm-integration.js` into your project. This single file (~70 lines) contains everything needed: the link-to-image rewriter, the SDK activator, the LCP promoter, and the per-block helpers. No other utility files are needed.
-
-**Step 3 — Four surgical additions to `scripts.js`**
+**Step 2 — Four additions to `scripts.js`**
 
 These are the only changes to your existing boilerplate code:
 
@@ -177,30 +190,31 @@ The `activateDmSdk` call is intentionally not awaited before `loadSection`. This
 
 ## Live Reference
 
-The integration described in this post is running in production at **[main--sdk--ritwiksrivastava.aem.live](https://main--sdk--ritwiksrivastava.aem.live/)**. This EDS site uses Approach B throughout — all image fields are configured with the Content Advisor picker and `caconfig.json` — and the DM SDK is wired into `scripts.js` exactly as described above. The hero image, cards, and zigzag image sections all receive SDK-managed, responsive DM delivery URLs with preload hints for the LCP candidate.
+A working reference implementation is live at **[main--sdk--ritwiksrivastava.aem.live](https://main--sdk--ritwiksrivastava.aem.live/)**. This EDS site uses Approach B throughout — all image fields are configured with the Content Advisor picker and `caconfig.json` — and the DM SDK is wired into `scripts.js` exactly as described above. The hero image, cards, and zigzag image sections all receive SDK-managed, responsive DM delivery URLs with preload hints for the LCP candidate.
 
 ---
 
-## Before and After
+## Part 3: Before and After
 
 | | Without SDK | With SDK |
 |---|---|---|
 | **What the browser sees** | `<a href="dm-url">` text link | `<img data-dm-src>` with `fetchpriority="high"` |
-| **LCP image discoverable by preload scanner?** | No | Yes — `<link rel="preload">` injected by SDK |
+| **LCP image discoverable by preload scanner?** | No | No — but JS preload injected as early as possible |
+| **`fetchpriority` signal on LCP image** | None | `fetchpriority="high"` set by SDK heuristic |
 | **Image size** | One fixed URL for all screens | Width × DPR computed per device |
 | **Below-fold images** | Loaded with page | Lazy-loaded with LQIP placeholder |
 | **Lighthouse LCP** | Commonly Poor | Significantly improved toward Good |
 | **Author workflow change** | — | None |
 
-Pages that previously scored Poor on Lighthouse LCP due to Approach B image handling see significant improvement with this integration. The LCP image goes from being invisible to the browser at parse time to having a `<link rel="preload" fetchpriority="high">` injected into the document `<head>` — the strongest possible signal to the browser's network stack.
+Pages that previously scored Poor on Lighthouse LCP due to Approach B image handling see significant improvement with this integration. The LCP image goes from being completely invisible to the browser at parse time to having a `<link rel="preload" fetchpriority="high">` injected into `<head>` as early as JavaScript allows — a substantial improvement, even if not equivalent to a natively parsed `<img>`.
 
 ---
 
-## What This Means for Your Team
+## Part 4: What This Means for Your Team
 
 **For authors:** Nothing changes. The same Content Advisor picker, the same asset selection experience. The only difference is that images actually show up — and show up fast.
 
-**For developers:** The SDK integration on top of Approach B is two files to copy and four lines to add to `scripts.js`. Once done, all future pages benefit automatically.
+**For developers:** The SDK integration on top of Approach B is one file to copy and four lines to add to `scripts.js`. Once done, all future pages benefit automatically.
 
 **For the business:** DM's full delivery capabilities — Smart Imaging, Smart Crop, format optimisation — are now actually exercised on every page load, at the right size for every device. The investment in Dynamic Media delivers its full value.
 
