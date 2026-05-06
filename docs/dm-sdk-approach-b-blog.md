@@ -14,7 +14,7 @@ This post explains the standard way Dynamic Media images work in EDS, why that a
 
 Adobe Dynamic Media (DM) is the enterprise image service built into AEM: it handles Smart Imaging, responsive cropping, format conversion (WebP, AVIF), and CDN-accelerated delivery. When an author selects an asset from the AEM DAM for use on an EDS page, DM provides a delivery URL — a direct link to the asset on the DM CDN.
 
-In Universal Editor, authors click an image field and the Custom Content Advisor picker opens. They browse the DAM, select an image, and confirm. Simple.
+In Universal Editor, authors click an image field and the **Configurable Content Advisor** extension opens. They browse the DAM, select an image, and confirm. Simple.
 
 What happens behind the scenes is where things get interesting.
 
@@ -35,35 +35,7 @@ The page's JavaScript is responsible for converting this link into an actual `<i
 
 ### Setting Up Approach B: Two Developer Steps
 
-Before any Lighthouse optimisation, your development team needs to configure two things so that the Custom Content Advisor picker is used for image fields and returns the correct DM delivery URL.
-
-**Step A — Configure the Custom Content Advisor picker in `component-models.json`**
-
-Image fields in your component model are updated to use the Custom component instead of the standard AEM assets browser. This tells Universal Editor to open the Custom Content Advisor picker when an author clicks an image field:
-
-```json
-{
-  "component": "custom-asset-namespace:custom-asset",
-  "name": "image",
-  "label": "Image",
-  "configUrl": "https://main--mysite--myorg.aem.page/tools/caconfig.json",
-  "valueType": "string"
-}
-```
-
-**Step B — Create `tools/caconfig.json`**
-
-The `configUrl` above points to a configuration file checked into your EDS project. This file tells the Content Advisor picker which AEM environment to connect to, which asset types to surface, and — critically — to return the DM delivery URL (not the author-tier URL) when an author selects an image:
-
-```json
-{
-  "aemTier": "delivery",
-  "alwaysUseDMDelivery": true,
-  "filterSchema": [{ "value": "image/*" }]
-}
-```
-
-Once these two steps are in place, authors can browse and select DM assets via the Content Advisor picker, and the correct delivery URL is stored in the page content automatically. This is the foundation — and it is all you need for Approach B to work.
+Before any Lighthouse optimisation, your development team needs to configure two things so that the **Configurable Content Advisor** extension is used for image fields and returns the correct DM delivery URL. Full reference documentation is available at [developer.adobe.com — Configurable Asset Picker](https://developer.adobe.com/uix/docs/extension-manager/extension-developed-by-adobe/configurable-asset-picker/#configure-component-modelsjson-to-leverage-dynamic-media-with-openapi-delivery).
 
 ---
 
@@ -113,7 +85,7 @@ Here is the full pipeline, from author action to fast image:
 ```
 Author selects image in Universal Editor
         ↓
-Content Advisor picker stores DM delivery URL as <a href> in page content
+Configurable Asset Picker stores DM delivery URL as <a href> in page content
         ↓
 EDS publishes page — raw HTML contains <a href="https://delivery-p...">
         ↓
@@ -190,7 +162,7 @@ The `activateDmSdk` call is intentionally not awaited before `loadSection`. This
 
 ## Live Reference
 
-A working reference implementation is live at **[main--sdk--ritwiksrivastava.aem.live](https://main--sdk--ritwiksrivastava.aem.live/)**. This EDS site uses Approach B throughout — all image fields are configured with the Content Advisor picker and `caconfig.json` — and the DM SDK is wired into `scripts.js` exactly as described above. The hero image, cards, and zigzag image sections all receive SDK-managed, responsive DM delivery URLs with preload hints for the LCP candidate.
+A working reference implementation is live at **[main--sdk--ritwiksrivastava.aem.live](https://main--sdk--ritwiksrivastava.aem.live/)**. This EDS site uses Approach B throughout — all image fields are configured with the Configurable Asset Picker extension and `caconfig.json` — and the DM SDK is wired into `scripts.js` exactly as described above. The hero image, cards, and zigzag image sections all receive SDK-managed, responsive DM delivery URLs with preload hints for the LCP candidate.
 
 ---
 
@@ -212,7 +184,7 @@ Pages that previously scored Poor on Lighthouse LCP due to Approach B image hand
 
 ## Part 4: What This Means for Your Team
 
-**For authors:** Nothing changes. The same Content Advisor picker, the same asset selection experience. The only difference is that images actually show up — and show up fast.
+**For authors:** Nothing changes. The same Configurable Asset Picker, the same asset selection experience. The only difference is that images actually show up — and show up fast.
 
 **For developers:** The SDK integration on top of Approach B is one file to copy and four lines to add to `scripts.js`. Once done, all future pages benefit automatically.
 
@@ -222,7 +194,7 @@ Pages that previously scored Poor on Lighthouse LCP due to Approach B image hand
 
 ## Conclusion
 
-Approach B is the correct foundation for using Dynamic Media assets in EDS. It is compatible with every authoring surface, stores a single canonical URL, and lets DM handle format and quality optimisation. Every EDS project using Dynamic Media should be set up with the Content Advisor picker and a `caconfig.json` — this is where you start.
+Approach B is the correct foundation for using Dynamic Media assets in EDS. It is compatible with every authoring surface, stores a single canonical URL, and lets DM handle format and quality optimisation. Every EDS project using Dynamic Media should be set up with the Configurable Asset Picker extension and a `caconfig.json` — this is where you start.
 
 The Lighthouse gap — anchor tags invisible to the browser's preload scanner — is a rendering-layer concern, not an authoring or infrastructure concern. The Dynamic Media SDK closes that gap with a small, dependency-free module and four additions to `scripts.js`.
 
